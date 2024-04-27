@@ -12,17 +12,26 @@ def main():
     db_manager.connect()
 
     # Example data to insert
-    data_to_insert = {
-        'card_name': 'rav tav',
-        'expiration': '05/58',
-        'amount': '120'
-    }
+    # data_to_insert = {
+    #     'card_name': 'rav tav',
+    #     'expiration': '05/58',
+    #     'amount': '120'
+    # }
 
-    # rows= db_manager.execute_query("INSERT INTO cards VALUES ('card_name', 'expiration' , 'amount');")
+    # rows= db_manager.execute_query("INSERT INTO stores VALUES ('buyme', 'h&m');")
+    # rows= db_manager.execute_query("INSERT INTO stores VALUES ('nufshonit', 'castro');")
+    # db_manager.execute_query("INSERT INTO stores VALUES ('rav tav', 'castro');")
+    # db_manager.execute_query("INSERT INTO stores VALUES ('rav tav', 'fox');")
     # print(rows)
     # rows= db_manager.execute_query("CREATE TABLE IF NOT EXISTS cards (card_name VARCHAR(255) PRIMARY KEY,expiration "
     #                                "VARCHAR(255) NOT NULL, amount INT NOT NULL)")
     # mysql.DatabaseManager.insert_data(db_manager,"cards",data_to_insert)
+    rows= db_manager.execute_query("show tables;")
+    print(rows)
+    rows= db_manager.execute_query("select * from stores;")
+    print(rows)
+    rows= db_manager.execute_query("select * from users;")
+    print(rows)
     rows= db_manager.execute_query("select * from cards;")
     print(rows)
     # rows= db_manager.execute_query("show tables;")

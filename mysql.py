@@ -32,6 +32,7 @@ class DatabaseManager:
             with self.connection.cursor() as cursor:
                 cursor.execute(query)
                 rows = cursor.fetchall()
+                self.connection.commit()
                 return rows
         except pymysql.Error as error:
             print("Error executing query:", error)

@@ -54,32 +54,49 @@ class SearchScreen(Screen):
         self.add_widget(layout)
         # self.add_widget(frame)
 
+
     def search(self, instance):
-        db_manager = DatabaseManager.connect(db_config)
-        db_manager.connect()
         store_name = self.search_input.text
+
         db_manager = DatabaseManager(db_config)
         db_manager.connect()
-
-        # Example query
-        query = """"
-            SELECT * from stores;
-            
-        """
+        query = f"SELECT * FROM stores WHERE store_name='{store_name}';"
         result = db_manager.execute_query(query)
-        print("Query Result:")
-        for rows in result:
-            print(rows)
 
-        # Display the results in the popup
-        if rows:
+        if result:
+            # Prepare the result text
             result_text = f"Details for cards at {store_name}:\n"
-            for row in rows:
-                result_text += f"Card: {row[0]}, Amount: {row[1]}, Expiration: {row[2]}\n"
+            for row in result:
+                result_text += f"Store: {row['store_name']}, Card: {row['card_name']}\n"
+
+            # Set the result text to the label in the popup
             self.result_label.text = result_text
         else:
             self.result_label.text = f"No cards found at {store_name}"
+
         self.popup.open()
+
+    # def search(self, instance):
+    #
+    #     store_name = self.search_input.text
+    #
+    #     db_manager = DatabaseManager(db_config)
+    #     db_manager.connect()
+    #     query = f"SELECT * FROM stores WHERE store_name='{store_name}';"
+    #     result = db_manager.execute_query(query)
+    #     print("Query Result:")
+    #     for row in result:
+    #         print(row)
+    #
+    #     # Display the results in the popup
+    #     if result:
+    #         result_text = f"Details for cards at {store_name}:\n"
+    #         for row in result:
+    #             result_text += f"Card: {row[0]}, Amount: {row[1]}, Expiration: {row[2]}\n"
+    #         self.result_label.text = result_text
+    #     else:
+    #         self.result_label.text = f"No cards found at {store_name}"
+    #     self.popup.open()
 
     def insert_card(self, instance):
         card_name = self.card_input.text
@@ -99,8 +116,6 @@ class SearchScreen(Screen):
             query = "INSERT INTO cards (card_name, amount, expiration) VALUES ('{}', '{}', '{}');".format(card_name, amount,
                                                                                                           expiration)
             db_manager.execute_query(query)
-            # rows = db_manager.execute_query("select * from cards;")
-            # print(rows)
 
             self.card_input.text = ''  # Clear input field after insertion
             self.amount_input.text = ''  # Clear input field after insertion
