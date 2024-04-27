@@ -17,12 +17,17 @@ def main():
         'expiration': '05/58',
         'amount': '120'
     }
-    rows= db_manager.execute_query("CREATE TABLE IF NOT EXISTS cards (card_name VARCHAR(255) PRIMARY KEY,expiration "
-                                   "VARCHAR(255) NOT NULL, amount INT NOT NULL)")
-    print(rows)
-    mysql.DatabaseManager.insert_data(db_manager,"cards",data_to_insert)
+
+    # rows= db_manager.execute_query("INSERT INTO cards VALUES ('card_name', 'expiration' , 'amount');")
+    # print(rows)
+    # rows= db_manager.execute_query("CREATE TABLE IF NOT EXISTS cards (card_name VARCHAR(255) PRIMARY KEY,expiration "
+    #                                "VARCHAR(255) NOT NULL, amount INT NOT NULL)")
+    # mysql.DatabaseManager.insert_data(db_manager,"cards",data_to_insert)
     rows= db_manager.execute_query("select * from cards;")
     print(rows)
+    # rows= db_manager.execute_query("show tables;")
+    # print(rows)
+
 
     # Example table to insert data into
     table_name = 'your_table'

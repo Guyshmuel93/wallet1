@@ -4,88 +4,36 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
-from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.core.window import Window
+from mysql import db_config, DatabaseManager
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.widget import Widget
-from kivy.graphics import Ellipse, Color
-from mysql import get_connection
-import pymysql
+from kivy.uix.label import Label
 
-class DatabaseManager:
-    def __init__(self):
-        self.connection = None
-
-    def connect(self):
-        try:
-            connection = mysql.connector.connect(**mysql_config)
-            print("Connected to MySQL database")
-
-            # Create a cursor object
-            cursor = connection.cursor()
-
-            # Your database operations here
-
-        except mysql.connector.Error as error:
-            print("Error:", error)
-
-        finally:
-            if 'connection' in locals() and connection.is_connected():
-                cursor.close()
-                connection.close()
-                print("Connection closed")
-
-    def disconnect(self):
-        if self.connection and self.connection.is_connected():
-            self.connection.close()
-            print("Connection closed")
-
-    def execute_query(self, query):
-        cursor = self.connection.cursor()
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        cursor.close()
-        return rows
 
 class RootWidget(BoxLayout):
     pass
 
+
 class SearchScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        Window.clearcolor = (169, 5, 7, 1)
+        Window.clearcolor = (9, 5, 7, 1)
 
         layout = BoxLayout(orientation='vertical', padding=40, spacing=20, size_hint=(None, None), size=(400, 500),
                            pos_hint={'center_x': 0.5, 'center_y': 0.5})
-        self.card_input = TextInput(hint_text='Enter card name',multiline=False)
-        self.amount_input = TextInput(hint_text='Enter amount',multiline=False)
-        self.experation = TextInput(hint_text='Enter expiration',multiline=False)
+        self.card_input = TextInput(hint_text='Enter card name', multiline=False)
+        self.amount_input = TextInput(hint_text='Enter amount', multiline=False)
+        self.experation = TextInput(hint_text='Enter expiration', multiline=False)
         insert_button = Button(text='Insert Card', on_press=self.insert_card)
-        root = RootWidget()
 
-        # frame = BoxLayout(orientation='vertical', padding=40, spacing=20, size_hint=(None, None), size=(400, 500),
-        #                    pos_hint={'center_x': 0.5, 'center_y': 0.5})
-
-        # frame = BoxLayout(orientation='vertical')
-        # test_button = Button(text='move', on_press=self.insert_card)
-        # frame.add_widget(test_button)
-        # test_button = Button(text=' first',size_hint_y = None,
-        #                               height = root.height * 0.8,
-        #                               size_hint_x = None,
-        #                               width = root.width*10)
-        # # frame.add_widget(frame.test)
-        # frame.add_widget(test_button)
-        #
-        # frame.bind(minimum_height=frame.test.setter('height'))
-        # frame.pos_hint = {'x': 0, 'y': 0}
-
-        self.search_input = TextInput(hint_text='Enter store name',multiline=False,
-                                      size_hint_y = None,
-                                      height = 30,
-                                      size_hint_x = None,
-                                      width = 70)
+        self.search_input = TextInput(hint_text='Enter store name', multiline=False,
+                                      size_hint_y=None,
+                                      height=30,
+                                      size_hint_x=None,
+                                      width=180)
         search_button = Button(text='Search', on_press=self.search)
+        showAll_button = Button(text='Show All Cards', on_press=self.showallcards)
 
         layout.add_widget(self.card_input)
         layout.add_widget(self.amount_input)
@@ -93,6 +41,7 @@ class SearchScreen(Screen):
         layout.add_widget(insert_button)
         layout.add_widget(self.search_input)
         layout.add_widget(search_button)
+        layout.add_widget(showAll_button)
 
         self.popup = Popup(title='Search Results', size_hint=(None, None), size=(400, 400), auto_dismiss=False)
 
@@ -106,25 +55,10 @@ class SearchScreen(Screen):
         # self.add_widget(frame)
 
     def search(self, instance):
+        db_manager = DatabaseManager.connect(db_config)
+        db_manager.connect()
         store_name = self.search_input.text
-
-        # Connect to the SQLite database
-        conn = sqlite3.connect('my_database.db')
-        cursor = conn.cursor()
-
-        # # Execute the query
-        # cursor.execute("""
-        #     SELECT s.card_name, cm.amount, cm.expiration
-        #     FROM stores AS s
-        #     INNER JOIN cards AS cm ON s.card_name = cm.card_name
-        #     WHERE s.store_name=?
-        # """, (store_name,))
-        # rows = cursor.fetchall()
-        #
-        # # Close the cursor and connection
-        # cursor.close()
-        # conn.close()
-        db_manager = DatabaseManager()
+        db_manager = DatabaseManager(db_config)
         db_manager.connect()
 
         # Example query
@@ -152,23 +86,55 @@ class SearchScreen(Screen):
         amount = self.amount_input.text
         expiration = self.experation.text
 
-        # Connect to the SQLite database
-        conn = sqlite3.connect('my_database.db')
-        cursor = conn.cursor()
+        if not card_name or not amount or not expiration:
+            result_text = f"Please fill in all fields\n"
+            self.result_label.text = result_text
+            self.popup.open()
 
-        # Execute the insertion
-        cursor.execute("INSERT INTO cards (card_name, expiration, amount) VALUES (?, ?, ?)", (card_name, expiration, amount))
+        else:
+            db_manager = DatabaseManager(db_config)
+            # Connect to the database
+            db_manager.connect()
 
-        # Commit changes and close the cursor and connection
-        conn.commit()
-        cursor.close()
-        conn.close()
+            query = "INSERT INTO cards (card_name, amount, expiration) VALUES ('{}', '{}', '{}');".format(card_name, amount,
+                                                                                                          expiration)
+            db_manager.execute_query(query)
+            # rows = db_manager.execute_query("select * from cards;")
+            # print(rows)
 
-        self.card_input.text = ''  # Clear input field after insertion
-        self.amount_input.text = ''  # Clear input field after insertion
-        self.experation.text = ''  # Clear input field after insertion
-        self.result_label.text = 'Card inserted successfully!'  # Show success message
+            self.card_input.text = ''  # Clear input field after insertion
+            self.amount_input.text = ''  # Clear input field after insertion
+            self.experation.text = ''  # Clear input field after insertion
+            result_text = f"Card inserted successfully\n"
+            self.result_label.text = result_text
+            self.popup.open()
 
+
+    def showallcards(self, instance):
+        db_manager = DatabaseManager(db_config)
+        db_manager.connect()
+        query = "select * from cards;"
+        rows = db_manager.execute_query(query)
+
+        # Create a GridLayout for the table
+        grid_layout = GridLayout(cols=3, spacing=10, size_hint_y=None)
+
+        # Add column headers
+        grid_layout.add_widget(Label(text='Card Name'))
+        grid_layout.add_widget(Label(text='Amount'))
+        grid_layout.add_widget(Label(text='Expiration'))
+
+        # Add data rows
+        for row in rows:
+            grid_layout.add_widget(Label(text=row['card_name']))
+            grid_layout.add_widget(Label(text=str(row['amount'])))
+            grid_layout.add_widget(Label(text=row['expiration']))
+
+        # Set the GridLayout as content for the popup
+        self.popup.content = grid_layout
+
+        # Open the popup to display the result
+        self.popup.open()
 
 class MyApp(App):
     def build(self):
