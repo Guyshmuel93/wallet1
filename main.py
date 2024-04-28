@@ -9,6 +9,7 @@ from kivy.core.window import Window
 from mysql import db_config, DatabaseManager
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
+from prettytable import PrettyTable
 
 
 class RootWidget(BoxLayout):
@@ -54,49 +55,77 @@ class SearchScreen(Screen):
         self.add_widget(layout)
         # self.add_widget(frame)
 
+    def extract_total_amount(self, result):
+        if result:
+            return int(result[0]['total_amount'])
+        else:
+            return 0  # Or any default value you want to return if there is no result
+
+    # def search(self, instance):
+    #     store_name = self.search_input.text
+    #
+    #     db_manager = DatabaseManager(db_config)
+    #     db_manager.connect()
+    #     query_results = f"SELECT SUM(amount) AS total_amount FROM cards WHERE card_name IN (SELECT card_name FROM stores WHERE store_name = 'castro');"
+    #     result = db_manager.execute_query(query_results)
+    #     query = f"SELECT * FROM cards WHERE card_name IN (SELECT card_name FROM stores WHERE store_name='castro');"
+    #     listing = db_manager.execute_query(query)
+    #
+    #     total_amount = self.extract_total_amount(result)
+    #     print(total_amount)
+    #     print(listing)
+    #     if result:
+    #         # Prepare the result text
+    #         result_text = f"Details for cards at {store_name}:\n"
+    #         for row in result:
+    #             result_text += f"for the store: {store_name} you have total credits of : {total_amount}"
+    #
+    #         # Set the result text to the label in the popup
+    #         self.result_label.text = result_text
+    #     else:
+    #         self.result_label.text = f"No cards found at {store_name}"
+    #
+    #     self.popup.open()
 
     def search(self, instance):
         store_name = self.search_input.text
 
         db_manager = DatabaseManager(db_config)
         db_manager.connect()
-        query = f"SELECT * FROM stores WHERE store_name='{store_name}';"
-        result = db_manager.execute_query(query)
 
-        if result:
-            # Prepare the result text
-            result_text = f"Details for cards at {store_name}:\n"
-            for row in result:
-                result_text += f"Store: {row['store_name']}, Card: {row['card_name']}\n"
+        # Query to get cards for the specified store
+        query = f"SELECT * FROM cards WHERE card_name IN (SELECT card_name FROM stores WHERE store_name='{store_name}');"
+        rows = db_manager.execute_query(query)
 
-            # Set the result text to the label in the popup
-            self.result_label.text = result_text
-        else:
-            self.result_label.text = f"No cards found at {store_name}"
+        # Query to get the total amount of credits for the specified store
+        total_amount_query = f"SELECT SUM(amount) AS total_amount FROM cards WHERE card_name IN (SELECT card_name FROM stores WHERE store_name='{store_name}');"
+        total_amount_result = db_manager.execute_query(total_amount_query)
+        total_amount = total_amount_result[0]['total_amount'] if total_amount_result else 0
 
+        # Create a GridLayout for the table
+        grid_layout = GridLayout(cols=3, spacing=10, size_hint_y=None)
+
+        # Add column headers
+        grid_layout.add_widget(Label(text='Card Name', bold=True))
+        grid_layout.add_widget(Label(text='Amount', bold=True))
+        grid_layout.add_widget(Label(text='Expiration', bold=True))
+
+        # Add data rows
+        for row in rows:
+            grid_layout.add_widget(Label(text=row['card_name']))
+            grid_layout.add_widget(Label(text=str(row['amount'])))
+            grid_layout.add_widget(Label(text=row['expiration']))
+
+        # Prepare the result text
+        result_text = f"Total credits for {store_name}: {total_amount}\n\n"
+
+        # Set the GridLayout as content for the popup
+        self.popup.content = BoxLayout(orientation='vertical', spacing=10, padding=10)
+        self.popup.content.add_widget(Label(text=result_text))
+        self.popup.content.add_widget(grid_layout)
+
+        # Open the popup to display the result
         self.popup.open()
-
-    # def search(self, instance):
-    #
-    #     store_name = self.search_input.text
-    #
-    #     db_manager = DatabaseManager(db_config)
-    #     db_manager.connect()
-    #     query = f"SELECT * FROM stores WHERE store_name='{store_name}';"
-    #     result = db_manager.execute_query(query)
-    #     print("Query Result:")
-    #     for row in result:
-    #         print(row)
-    #
-    #     # Display the results in the popup
-    #     if result:
-    #         result_text = f"Details for cards at {store_name}:\n"
-    #         for row in result:
-    #             result_text += f"Card: {row[0]}, Amount: {row[1]}, Expiration: {row[2]}\n"
-    #         self.result_label.text = result_text
-    #     else:
-    #         self.result_label.text = f"No cards found at {store_name}"
-    #     self.popup.open()
 
     def insert_card(self, instance):
         card_name = self.card_input.text
